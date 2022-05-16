@@ -1,79 +1,60 @@
 /*
- * Copyright (c) 2017, Intel Corporation
- * All rights reserved.
+ * main.c
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the Intel Corporation nor the names of its
- *    contributors may be used to endorse or promote products derived from this
- *    software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE INTEL CORPORATION OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
- * LED_Blink
- *
- * This app will blink an LED on the development platform indefinitely.
- *
- * In order for this application to work correctly on the Intel(R) Quark(TM)
- * Microcontroller D2000 Development Platform, jumper J3 must be set to USR.
+ *  Created on: 16.05.2022
+ *      Author: Lefucjusz
  */
 
 #include "clk.h"
 #include "qm_gpio.h"
 #include "qm_pinmux.h"
 #include "qm_pin_functions.h"
+#include "HD44780.h"
 
-/* The following defines the pin and pin mux details for each SoC. */
-#if (QUARK_SE)
-#define PIN_OUT 25
-#define LED_PIN_ID (QM_PIN_ID_59)
-#define PIN_MUX_FN (QM_PIN_59_FN_GPIO_25)
-#elif(QUARK_D2000)
-#define PIN_OUT 24
-#define LED_PIN_ID (QM_PIN_ID_24)
-#define PIN_MUX_FN (QM_PIN_24_FN_GPIO_24)
-#endif
-#define DELAY 250000UL /* 0.25 seconds. */
+#define D7_PIN QM_PIN_ID_13 // 0
+#define D6_PIN QM_PIN_ID_12 // 1
+#define D5_PIN QM_PIN_ID_11 // 2
+#define D4_PIN QM_PIN_ID_10 // 3
+#define RS_PIN QM_PIN_ID_2 // 5
+#define E_PIN QM_PIN_ID_5 // 4
 
-static void pin_mux_setup(void)
+static void pin_setup(void)
 {
-	qm_pmux_select(LED_PIN_ID, PIN_MUX_FN);
+	qm_pmux_select(D7_PIN, QM_PMUX_FN_0);
+	qm_pmux_select(D6_PIN, QM_PMUX_FN_0);
+	qm_pmux_select(D5_PIN, QM_PMUX_FN_0);
+	qm_pmux_select(D4_PIN, QM_PMUX_FN_0);
+	qm_pmux_select(RS_PIN, QM_PMUX_FN_0);
+	qm_pmux_select(E_PIN, QM_PMUX_FN_0);
+
+	qm_gpio_port_config_t cfg;
+	cfg.direction = (1 << D7_PIN) | (1 << D6_PIN) | (1 << D5_PIN) | (1 << D4_PIN) | (1 << RS_PIN) | (1 << E_PIN);
+	qm_gpio_set_config(QM_GPIO_0, &cfg);
 }
 
 int main(void)
 {
-	static qm_gpio_port_config_t cfg;
+	pin_setup();
 
-	/* Set the GPIO pin muxing. */
-	pin_mux_setup();
+	HD44780_config_t lcd_config = {
+			.D4 = D4_PIN,
+			.D5 = D5_PIN,
+			.D6 = D6_PIN,
+			.D7 = D7_PIN,
+			.RS = RS_PIN,
+			.E = E_PIN,
+			.type = DISPLAY_20x2,
+			.entry_mode_flags = INCREASE_CURSOR_ON,
+			.on_off_flags = DISPLAY_ON | CURSOR_ON
+	};
 
-	/* Set the GPIO pin direction to out and write the config. */
-	cfg.direction = BIT(PIN_OUT);
-	qm_gpio_set_config(QM_GPIO_0, &cfg);
+	HD44780_init(&lcd_config);
 
-	/* Loop indefinitely while blinking the LED. */
+	HD44780_gotoxy(65, 77);
+
+//	HD44780_write_string("Test1234!");
+
 	while (1) {
-		qm_gpio_set_pin(QM_GPIO_0, PIN_OUT);
-		clk_sys_udelay(DELAY);
-		qm_gpio_clear_pin(QM_GPIO_0, PIN_OUT);
-		clk_sys_udelay(DELAY);
+
 	}
 }

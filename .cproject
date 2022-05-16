@@ -38,6 +38,9 @@
 							<tool id="com.intel.iss.mcu.archiver.gcc.1530599909" name="GCC Archiver" superClass="com.intel.iss.mcu.archiver.gcc"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="include|source" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -79,6 +82,9 @@
 							<tool id="com.intel.iss.mcu.archiver.gcc.1281460571" name="GCC Archiver" superClass="com.intel.iss.mcu.archiver.gcc"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="include|source" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -91,4 +97,5 @@
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>
