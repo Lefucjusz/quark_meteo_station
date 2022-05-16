@@ -9,6 +9,9 @@
 #include "clk.h"
 #include "qm_gpio.h"
 
+/* Needed in HD44780_write_integer() */
+#define HD44780_TMP_BUF_SIZE 11 // Value stored in int32_t has at most 10 digits - 2147483647 - one additional byte for null-terminator
+
 typedef struct {
 	uint8_t rows;
 	uint8_t columns;
@@ -126,9 +129,34 @@ void HD44780_gotoxy(uint8_t x, uint8_t y) {
 	HD44780_write_cmd(SET_DDRAM_ADDR_CMD | required_address);
 }
 
-void HD44780_num(uint8_t number) { //TODO change so that longer numbers can be displayed too with leading zeros
-	HD44780_write_char((number / 10) + '0');
-	HD44780_write_char((number % 10) + '0');
+void HD44780_write_integer(int32_t number, uint8_t required_length) {
+	/* If number is negative, display minus sign and convert it to positive */
+	if(number < 0) {
+		HD44780_write_char('-');
+		number = -number;
+	}
+
+	char buffer[HD44780_TMP_BUF_SIZE] = {0};
+	char* buffer_ptr = &buffer[HD44780_TMP_BUF_SIZE - 1]; // Set buffer pointer to last element
+	uint8_t digit_count = 0;
+
+	while(number > 0) {
+		/* Decrementing has to be here, not at the end of loop, so that null-terminator at the end is preserved
+		 * and buffer_ptr is properly aligned after exiting the while loop */
+		buffer_ptr--;
+		*buffer_ptr = (number % 10) + '0'; // Insert digits from the end of the array and move towards the beginning
+		number /= 10;
+		digit_count++;
+	}
+
+	/* Leading zeros handling - compute how many should be appended to get the required length and display them */
+	int8_t leading_zeros = required_length - digit_count;
+	while(leading_zeros > 0) {
+		HD44780_write_char('0');
+		leading_zeros--;
+	}
+
+	HD44780_write_string(buffer_ptr);
 }
 
 void HD44780_write_string(const char* string) {

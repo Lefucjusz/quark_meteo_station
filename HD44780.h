@@ -78,7 +78,7 @@ void HD44780_clear(void);
 
 void HD44780_gotoxy(uint8_t x, uint8_t y);
 
-void HD44780_num(uint8_t number); //TODO change so that longer numbers can be displayed too with leading zeros
+void HD44780_write_integer(int32_t number, uint8_t length);
 
 void HD44780_write_string(const char* string);
 

@@ -50,9 +50,9 @@ int main(void)
 
 	HD44780_init(&lcd_config);
 
-	HD44780_gotoxy(65, 77);
+//	HD44780_gotoxy(1, 1);
 
-//	HD44780_write_string("Test1234!");
+	HD44780_write_integer(-7, 2);
 
 	while (1) {
 
