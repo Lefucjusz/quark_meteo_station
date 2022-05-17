@@ -11,7 +11,7 @@
 #include "qm_pinmux.h"
 #include "qm_pin_functions.h"
 
-static I2C_error_t error = STATUS_OK;
+static I2C_error_t error = STATUS_UNINITIALIZED;
 static uint8_t slave_addr;
 
 void I2C_init(uint8_t dev_addr) {
@@ -31,7 +31,11 @@ void I2C_init(uint8_t dev_addr) {
 	i2c_config.mode = QM_I2C_MASTER;
 	i2c_config.speed = QM_I2C_SPEED_STD; //TODO check with fast ^^
 
-	qm_i2c_set_config(QM_I2C_0, &i2c_config);
+	if(qm_i2c_set_config(QM_I2C_0, &i2c_config)) {
+		error = STATUS_INIT_FAILED;
+	}
+
+	error = STATUS_OK;
 }
 
 void I2C_write(uint8_t* data, uint8_t size, uint8_t reg_addr) {
