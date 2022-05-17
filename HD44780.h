@@ -28,11 +28,13 @@ typedef enum {
 } HD44780_lines;
 
 typedef enum {
+	FLAGS_CLEARED = 0x00, // In this mode display scroll is off and cursor position is decreased
 	DISPLAY_SCROLL_ON = 0x01,
-	INCREASE_CURSOR_ON = 0x02,
+	INCREASE_CURSOR_ON = 0x02
 } HD44780_entry_mode_flags;
 
 typedef enum {
+	EVERYTHING_OFF = 0x00,
 	CURSOR_BLINK_ON = 0x01,
 	CURSOR_ON = 0x02,
 	DISPLAY_ON = 0x04
