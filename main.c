@@ -16,7 +16,7 @@
 #include "I2C.h"
 
 #define BMP280_DEV_ADDR 0x76
-#define BMP280_CAL_DATA_SIZE 26
+#define BMP280_CAL_DATA_SIZE 24
 
 #define D7_PIN QM_PIN_ID_13 // 0
 #define D6_PIN QM_PIN_ID_12 // 1
@@ -62,6 +62,17 @@ typedef union
 
 bmp280_cal_t cal;
 
+const uint8_t glyphs_array[] = {
+		0b00000, 0b01110, 0b00001, 0b01111, 0b10001, 0b01111, 0b00010, 0b00001, // ¹
+		0b00010, 0b00100, 0b01110, 0b10000, 0b10000, 0b10001, 0b01110, 0b00000, // æ
+		0b00000, 0b01110, 0b10001, 0b11111, 0b10000, 0b01110, 0b00100, 0b00010, // ê
+		0b01100, 0b00100, 0b00110, 0b00100, 0b01100, 0b00100, 0b01110, 0b00000, // ³
+		0b00010, 0b00100, 0b10110, 0b11001, 0b10001, 0b10001, 0b10001, 0b00000, // ñ
+		0b00010, 0b00100, 0b01110, 0b10001, 0b10001, 0b10001, 0b01110, 0b00000, // ó
+		0b00010, 0b00100, 0b01110, 0b10000, 0b01110, 0b00001, 0b11110, 0b00000, // œ
+		0b00000, 0b00010, 0b11111, 0b00010, 0b00100, 0b01000, 0b11111, 0b00000  // ¿
+};
+
 int main(void)
 {
 	pin_setup();
@@ -79,18 +90,24 @@ int main(void)
 	};
 
 	HD44780_init(&lcd_config);
+	HD44780_load_custom_glyphs(glyphs_array);
+	HD44780_clear();
 
-	I2C_init(BMP280_DEV_ADDR);
-
-	uint8_t bmp_id = I2C_read_byte(0xD0);
-
-	if(I2C_error()) {
-		HD44780_write_string("I2C error! :(");
-	} else if(bmp_id == 0x58) {
-		HD44780_write_string("BMP detected!");
-	} else {
-		HD44780_write_string("BMP not found! :(");
+	for(HD44780_glyph_addr_t i = 0; i < CUSTOM_GLYPHS_NUM; i++) {
+		HD44780_write_char(i);
 	}
+
+//	I2C_init(BMP280_DEV_ADDR);
+//
+//	uint8_t bmp_id = I2C_read_byte(0xD0);
+//
+//	if(I2C_error()) {
+//		HD44780_write_string("I2C error! :(");
+//	} else if(bmp_id == 0x58) {
+//		HD44780_write_string("BMP detected!");
+//	} else {
+//		HD44780_write_string("BMP not found! :(");
+//	}
 
 	while(1);
 

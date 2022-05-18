@@ -56,6 +56,18 @@ typedef enum {
 	CHARACTER
 } HD44780_mode_t;
 
+typedef enum {
+	CUSTOM_GLYPH_0,
+	CUSTOM_GLYPH_1,
+	CUSTOM_GLYPH_2,
+	CUSTOM_GLYPH_3,
+	CUSTOM_GLYPH_4,
+	CUSTOM_GLYPH_5,
+	CUSTOM_GLYPH_6,
+	CUSTOM_GLYPH_7,
+	CUSTOM_GLYPHS_NUM // This value equals to number of custom glyphs in HD44780 controller (which is 8 BTW)
+} HD44780_glyph_addr_t;
+
 typedef struct {
 	uint8_t RS;
 	uint8_t E;
@@ -83,5 +95,9 @@ void HD44780_gotoxy(uint8_t x, uint8_t y);
 void HD44780_write_integer(int32_t number, uint8_t length);
 
 void HD44780_write_string(const char* string);
+
+void HD44780_load_custom_glyph(const uint8_t* glyph_array, HD44780_glyph_addr_t cgram_addr);
+
+void HD44780_load_custom_glyphs(const uint8_t* glyphs_array);
 
 #endif /* HD44780_H_ */

@@ -12,6 +12,8 @@
 /* Needed in HD44780_write_integer() */
 #define HD44780_TMP_BUF_SIZE 11 // Value stored in int32_t has at most 10 digits - 2147483647 - one additional byte for null-terminator
 
+#define HD44780_CGRAM_CHAR_SIZE 8 // Each custom char uses 8 bytes
+
 typedef struct {
 	uint8_t rows;
 	uint8_t columns;
@@ -165,6 +167,24 @@ void HD44780_write_string(const char* string) {
 	}
 }
 
+void HD44780_load_custom_glyph(const uint8_t* glyph_array, HD44780_glyph_addr_t cgram_addr) {
+	/* If provided address out of range, select last one */
+	if(cgram_addr > CUSTOM_GLYPH_7) {
+		cgram_addr = CUSTOM_GLYPH_7;
+	}
 
+	/* Set CGRAM pointer to required location */
+	uint8_t cgram_offset = cgram_addr * HD44780_CGRAM_CHAR_SIZE;
+	HD44780_write_cmd(SET_CGRAM_ADDR_CMD | cgram_offset);
 
+	/* Load character */
+	for(uint8_t i = 0; i < HD44780_CGRAM_CHAR_SIZE; i++) {
+		HD44780_write_char(glyph_array[i]);
+	}
+}
 
+void HD44780_load_custom_glyphs(const uint8_t* glyphs_array) {
+	for(HD44780_glyph_addr_t i = CUSTOM_GLYPH_0; i < CUSTOM_GLYPHS_NUM; i++) {
+		HD44780_load_custom_glyph(&glyphs_array[i * HD44780_CGRAM_CHAR_SIZE], i);
+	}
+}
