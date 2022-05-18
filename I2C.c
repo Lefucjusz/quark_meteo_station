@@ -41,6 +41,13 @@ void I2C_init(uint8_t dev_addr) {
 void I2C_write(uint8_t* data, uint8_t size, uint8_t reg_addr) {
 	qm_i2c_status_t status;
 
+	/* Set write register address */
+	if(qm_i2c_master_write(QM_I2C_0, slave_addr, &reg_addr, sizeof(reg_addr), false, &status)) {
+		error = STATUS_WRITE_FAILED;
+		return;
+	}
+
+	/* Write data to selected address */
 	if(qm_i2c_master_write(QM_I2C_0, slave_addr, data, size, true, &status)) {
 		error = STATUS_WRITE_FAILED;
 		return;
@@ -56,7 +63,7 @@ void I2C_write_byte(uint8_t byte, uint8_t reg_addr) {
 void I2C_read(uint8_t* buf, uint8_t size, uint8_t reg_addr) {
 	qm_i2c_status_t status;
 
-	/* Write read register address */
+	/* Set read register address */
 	if(qm_i2c_master_write(QM_I2C_0, slave_addr, &reg_addr, sizeof(reg_addr), false, &status)) {
 		error = STATUS_WRITE_FAILED;
 		return;
