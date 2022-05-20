@@ -31,7 +31,17 @@ static void onewire_pin_set_direction(onewire_pin_dir_t direction) {
 void onewire_init(onewire_config_t* const onewire_config) {
 	onewire_cfg = onewire_config;
 	onewire_pin_set_direction(ONEWIRE_INPUT);
-	qm_gpio_clear_pin(QM_GPIO_0, onewire_cfg->onewire_pin); //TODO describe the trick with constant low and changing direction
+
+	/* This library uses a little trick with port direction when driving 1-Wire pin, which simplifies the code.
+	 * The output state of the pin is changed only once - it is cleared by the qm_gpio_clear_pin() below
+	 * and never touched again. Changing the pin direction from output to input internally disconnects the output
+	 * state latch and leaves the pin floating. Since 1-Wire is an open-drain bus with external pull-up resistor,
+	 * leaving the pin in Hi-Z state means that the resistor will enforce the bus state to be logical "1".
+	 * Because of this feature changing the pin direction to input is enough to drive the bus high. It's even safer
+	 * to do it this way, because driving the bus from high-current port output might result in short circuit in
+	 * case some 1-Wire slave device is pulling it low at the same time.
+	 */
+	qm_gpio_clear_pin(QM_GPIO_0, onewire_cfg->onewire_pin);
 }
 
 onewire_detect_t onewire_reset(void) {
