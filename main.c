@@ -15,9 +15,7 @@
 #include "HD44780.h"
 #include "I2C.h"
 #include "BMP280.h"
-
-#define BMP280_DEV_ADDR 0x76
-#define BMP280_CAL_DATA_SIZE 24
+#include "onewire.h"
 
 #define D7_PIN QM_PIN_ID_13 // 0
 #define D6_PIN QM_PIN_ID_12 // 1
@@ -26,7 +24,9 @@
 #define RS_PIN QM_PIN_ID_2 // 5
 #define E_PIN QM_PIN_ID_5 // 4
 
-static void pin_setup(void)
+#define ONEWIRE_PIN QM_PIN_ID_8 // 7
+
+static void pin_setup(qm_gpio_port_config_t* const gpio_config)
 {
 	qm_pmux_select(D7_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(D6_PIN, QM_PMUX_FN_0);
@@ -35,14 +35,17 @@ static void pin_setup(void)
 	qm_pmux_select(RS_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(E_PIN, QM_PMUX_FN_0);
 
-	qm_gpio_port_config_t cfg;
-	cfg.direction = (1 << D7_PIN) | (1 << D6_PIN) | (1 << D5_PIN) | (1 << D4_PIN) | (1 << RS_PIN) | (1 << E_PIN);
-	qm_gpio_set_config(QM_GPIO_0, &cfg);
+	qm_pmux_select(ONEWIRE_PIN, QM_PMUX_FN_0);
+	qm_pmux_pullup_en(ONEWIRE_PIN, true);
+
+	gpio_config->direction = (1 << D7_PIN) | (1 << D6_PIN) | (1 << D5_PIN) | (1 << D4_PIN) | (1 << RS_PIN) | (1 << E_PIN);
+	qm_gpio_set_config(QM_GPIO_0, gpio_config);
 }
 
 int main(void)
 {
-	pin_setup();
+	qm_gpio_port_config_t gpio_config;
+	pin_setup(&gpio_config);
 
 	HD44780_config_t lcd_config = {
 			.D4 = D4_PIN,
@@ -57,42 +60,43 @@ int main(void)
 	};
 	HD44780_init(&lcd_config);
 
-	I2C_init(BMP280_ADDR_LOW);
-
-	BMP280_config_t bmp_config = {
-			.config_flags = BMP280_STBY_TIME_8 | BMP280_FILTER_COEFF_2,
-			.control_flags = BMP280_MODE_NORMAL | BMP280_PRES_OVERSAMPLING_X1 | BMP280_TEMP_OVERSAMPLING_X1
+	onewire_config_t onewire_config = {
+			.gpio_config = &gpio_config,
+			.onewire_pin = ONEWIRE_PIN
 	};
-	BMP280_init(&bmp_config);
+	onewire_init(&onewire_config);
 
-	if(BMP280_detect() == BMP280_ABSENT) {
-		HD44780_write_string("Can't find BMP280!");
+	onewire_detect_t response = onewire_reset();
+
+	if(response == ONEWIRE_ABSENT) {
+		HD44780_write_string("DS18B20 absent :(");
 		while(1);
 	}
 
-	HD44780_write_string("BMP280 detected!");
-	clk_sys_udelay(2 * 1000 * 1000); // Wait 2 seconds
-	HD44780_clear();
-
-	BMP280_meas_t measurement;
+	HD44780_write_string("DS18B20 present!");
 
 	while(1) {
-		measurement = BMP280_get_measurement();
+		onewire_reset();
+		onewire_write_byte(0xCC);
+		onewire_write_byte(0x44);
+		clk_sys_udelay(1 * 1000 * 1000);
 
-		HD44780_gotoxy(1, 1);
-		HD44780_write_integer(measurement.temperature / 100, 0);
+		onewire_reset();
+		onewire_write_byte(0xCC);
+		onewire_write_byte(0xBE);
+		uint8_t lsb = onewire_read_byte();
+		uint8_t msb = onewire_read_byte();
+
+		uint8_t integer = (uint8_t)( ((msb << 4) | (lsb >> 4)) & 0x7F);
+		uint8_t fraction = (uint8_t)( ((lsb & 0x0F) * 625) / 100);
+
+		HD44780_clear();
+		HD44780_write_integer(integer, 0);
 		HD44780_write_char('.');
-		HD44780_write_integer(measurement.temperature % 100, 2);
+		HD44780_write_integer(fraction, 2);
 		HD44780_write_char('C');
-
-		HD44780_gotoxy(2, 1);
-		HD44780_write_integer(measurement.pressure / 100, 0);
-		HD44780_write_char('.');
-		HD44780_write_integer(measurement.pressure % 100, 2);
-		HD44780_write_string("hPa");
-
-		clk_sys_udelay(1 * 1000 * 1000); // Wait 1 second
 	}
+
 
 	return 0;
 }
