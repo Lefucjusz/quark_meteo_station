@@ -20,11 +20,11 @@ typedef enum {
 
 void I2C_init(uint8_t dev_addr);
 
-void I2C_write(uint8_t* data, uint8_t size, uint8_t reg_addr);
+void I2C_write(const uint8_t* const data, uint8_t size, uint8_t reg_addr);
 
 void I2C_write_byte(uint8_t byte, uint8_t reg_addr);
 
-void I2C_read(uint8_t* buf, uint8_t size, uint8_t reg_addr);
+void I2C_read(uint8_t* const buf, uint8_t size, uint8_t reg_addr);
 
 uint8_t I2C_read_byte(uint8_t reg_addr);
 

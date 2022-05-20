@@ -20,7 +20,7 @@ typedef struct {
 	uint8_t rows_first_addr[4]; // Display has at most 4 rows
 } HD44780_type_data_t;
 
-static HD44780_type_data_t HD44780_type_data[DISPLAY_TYPES_NUM] = {
+static HD44780_type_data_t HD44780_type_data[HD44780_DISPLAY_TYPES_NUM] = {
 		/* This is super weird display, it's 16x1, but behaves like 8x2 */
 		{.rows = 2, .columns = 8, .rows_first_addr[0] = 0x00, .rows_first_addr[1] = 0x40},
 		{.rows = 1, .columns = 16, .rows_first_addr[0] = 0x00},
@@ -33,12 +33,12 @@ static HD44780_type_data_t HD44780_type_data[DISPLAY_TYPES_NUM] = {
 
 static HD44780_config_t* HD44780_config;
 
-void HD44780_init(HD44780_config_t* config) {
+void HD44780_init(HD44780_config_t* const config) {
 	HD44780_config = config;
 
 	/* If type is invalid, choose the most popular display */
-	if((HD44780_config->type < 0) || (HD44780_config->type >= DISPLAY_TYPES_NUM)) {
-		HD44780_config->type = DISPLAY_16x2;
+	if((HD44780_config->type < 0) || (HD44780_config->type >= HD44780_DISPLAY_TYPES_NUM)) {
+		HD44780_config->type = HD44780_DISPLAY_16x2;
 	}
 
 	/* WTF?! Weird 4-bit init instructions... */
@@ -53,20 +53,20 @@ void HD44780_init(HD44780_config_t* config) {
 	/* Here begins the real configuration */
 	HD44780_type_data_t type_data = HD44780_type_data[HD44780_config->type];
 	if(type_data.rows == 1) {
-		HD44780_write_cmd(FUNCTION_SET_CMD | ONE_LINE); // Initialize as 1 line, 5x8 matrix, 4-bit interface
+		HD44780_write_cmd(HD44780_FUNCTION_SET_CMD | HD44780_ONE_LINE); // Initialize as 1 line, 5x8 matrix, 4-bit interface
 	} else {
-		HD44780_write_cmd(FUNCTION_SET_CMD | TWO_LINES); // Initialize as 2 lines, 5x8 matrix, 4-bit interface
+		HD44780_write_cmd(HD44780_FUNCTION_SET_CMD | HD44780_TWO_LINES); // Initialize as 2 lines, 5x8 matrix, 4-bit interface
 	}
 
-	HD44780_write_cmd(DISPLAY_ON_OFF_CMD | HD44780_config->on_off_flags); // Set display on/off flags
-	HD44780_write_cmd(ENTRY_MODE_SET_CMD | HD44780_config->entry_mode_flags); // Set entry mode flags
+	HD44780_write_cmd(HD44780_DISPLAY_ON_OFF_CMD | HD44780_config->on_off_flags); // Set display on/off flags
+	HD44780_write_cmd(HD44780_ENTRY_MODE_SET_CMD | HD44780_config->entry_mode_flags); // Set entry mode flags
 
 	HD44780_clear();
 }
 
 void HD44780_write_byte(uint8_t byte, HD44780_mode_t mode) {
 	/* Set RS line state */
-	qm_gpio_set_pin_state(QM_GPIO_0, HD44780_config->RS, mode == CHARACTER ? QM_GPIO_HIGH : QM_GPIO_LOW);
+	qm_gpio_set_pin_state(QM_GPIO_0, HD44780_config->RS, mode == HD44780_CHARACTER ? QM_GPIO_HIGH : QM_GPIO_LOW);
 
 	/* Write upper nibble */
 	qm_gpio_set_pin_state(QM_GPIO_0, HD44780_config->D7, (byte & (1 << 7)) ? QM_GPIO_HIGH : QM_GPIO_LOW);
@@ -92,21 +92,21 @@ void HD44780_write_byte(uint8_t byte, HD44780_mode_t mode) {
 }
 
 void HD44780_write_cmd(uint8_t command) {
-	HD44780_write_byte(command, INSTRUCTION);
+	HD44780_write_byte(command, HD44780_INSTRUCTION);
 }
 
 void HD44780_write_char(char character) {
-	HD44780_write_byte(character, CHARACTER);
+	HD44780_write_byte(character, HD44780_CHARACTER);
 }
 
 void HD44780_clear(void) {
 	/* Clear display */
-	HD44780_write_cmd(CLEAR_DISPLAY_CMD);
+	HD44780_write_cmd(HD44780_CLEAR_DISPLAY_CMD);
 	clk_sys_udelay(1000); // Wait 1ms
 
 	/* Set cursor to first line */
 	HD44780_type_data_t type_data = HD44780_type_data[HD44780_config->type];
-	HD44780_write_cmd(SET_DDRAM_ADDR_CMD | type_data.rows_first_addr[0]);
+	HD44780_write_cmd(HD44780_SET_DDRAM_ADDR_CMD | type_data.rows_first_addr[0]);
 	clk_sys_udelay(1000); // Wait 1ms
 }
 
@@ -128,7 +128,7 @@ void HD44780_gotoxy(uint8_t x, uint8_t y) {
 	uint8_t required_address = type_data.rows_first_addr[x - 1] + y - 1;
 
 	/* Move to requested position */
-	HD44780_write_cmd(SET_DDRAM_ADDR_CMD | required_address);
+	HD44780_write_cmd(HD44780_SET_DDRAM_ADDR_CMD | required_address);
 }
 
 void HD44780_write_integer(int32_t number, uint8_t required_length) {
@@ -167,15 +167,15 @@ void HD44780_write_string(const char* string) {
 	}
 }
 
-void HD44780_load_custom_glyph(const uint8_t* glyph_array, HD44780_glyph_addr_t cgram_addr) {
+void HD44780_load_custom_glyph(const uint8_t* const glyph_array, HD44780_glyph_addr_t cgram_addr) {
 	/* If provided address out of range, select last one */
-	if(cgram_addr > CUSTOM_GLYPH_7) {
-		cgram_addr = CUSTOM_GLYPH_7;
+	if(cgram_addr > HD44780_CUSTOM_GLYPH_7) {
+		cgram_addr = HD44780_CUSTOM_GLYPH_7;
 	}
 
 	/* Set CGRAM pointer to required location */
 	uint8_t cgram_offset = cgram_addr * HD44780_CGRAM_CHAR_SIZE;
-	HD44780_write_cmd(SET_CGRAM_ADDR_CMD | cgram_offset);
+	HD44780_write_cmd(HD44780_SET_CGRAM_ADDR_CMD | cgram_offset);
 
 	/* Load character */
 	for(uint8_t i = 0; i < HD44780_CGRAM_CHAR_SIZE; i++) {
@@ -183,8 +183,8 @@ void HD44780_load_custom_glyph(const uint8_t* glyph_array, HD44780_glyph_addr_t 
 	}
 }
 
-void HD44780_load_custom_glyphs(const uint8_t* glyphs_array) {
-	for(HD44780_glyph_addr_t i = CUSTOM_GLYPH_0; i < CUSTOM_GLYPHS_NUM; i++) {
+void HD44780_load_custom_glyphs(const uint8_t* const glyphs_array) {
+	for(HD44780_glyph_addr_t i = HD44780_CUSTOM_GLYPH_0; i < HD44780_CUSTOM_GLYPHS_NUM; i++) {
 		HD44780_load_custom_glyph(&glyphs_array[i * HD44780_CGRAM_CHAR_SIZE], i);
 	}
 }

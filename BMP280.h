@@ -103,7 +103,7 @@ typedef struct
 	int32_t temperature;
 } BMP280_meas_t;
 
-void BMP280_init(BMP280_config_t* config);
+void BMP280_init(const BMP280_config_t* const config);
 BMP280_detect_t BMP280_detect(void);
 BMP280_meas_t BMP280_get_measurement(void);
 

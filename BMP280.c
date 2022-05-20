@@ -83,7 +83,7 @@ static void BMP280_compute_compensation(void) {
 	meas.pressure = (uint32_t)((int32_t)meas.pressure + ((var1 + var2 + cal.P7) >> 4));
 }
 
-void BMP280_init(BMP280_config_t* config) {
+void BMP280_init(const BMP280_config_t* const config) {
 	/* Configure BMP280 */
 	I2C_write(config->raw_data, BMP280_CONFIG_SIZE, BMP280_CTRL_MEAS_REG);
 

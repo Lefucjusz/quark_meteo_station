@@ -29,7 +29,7 @@ void I2C_init(uint8_t dev_addr) {
 
 	i2c_config.address_mode = QM_I2C_7_BIT;
 	i2c_config.mode = QM_I2C_MASTER;
-	i2c_config.speed = QM_I2C_SPEED_STD; //TODO check with fast ^^
+	i2c_config.speed = QM_I2C_SPEED_FAST; //QM_I2C_SPEED_STD; //TODO check with fast ^^
 
 	if(qm_i2c_set_config(QM_I2C_0, &i2c_config)) {
 		error = STATUS_INIT_FAILED;
@@ -38,7 +38,7 @@ void I2C_init(uint8_t dev_addr) {
 	error = STATUS_OK;
 }
 
-void I2C_write(uint8_t* data, uint8_t size, uint8_t reg_addr) {
+void I2C_write(const uint8_t* const data, uint8_t size, uint8_t reg_addr) {
 	qm_i2c_status_t status;
 
 	/* Set write register address */

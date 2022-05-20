@@ -51,9 +51,9 @@ int main(void)
 			.D7 = D7_PIN,
 			.RS = RS_PIN,
 			.E = E_PIN,
-			.type = DISPLAY_20x2,
-			.entry_mode_flags = INCREASE_CURSOR_ON,
-			.on_off_flags = DISPLAY_ON
+			.type = HD44780_DISPLAY_20x2,
+			.entry_mode_flags = HD44780_INCREASE_CURSOR_ON,
+			.on_off_flags = HD44780_DISPLAY_ON
 	};
 	HD44780_init(&lcd_config);
 
