@@ -114,11 +114,19 @@ void HD44780_gotoxy(uint8_t x, uint8_t y) {
 	/* Get data for selected display type */
 	HD44780_type_data_t type_data = HD44780_type_data[HD44780_config->type];
 
+	/* If rows < 1, select the first one */
+	if(x < 1) {
+		x = 1;
+	}
 	/* If rows out of range, select the last one */
 	if(x > type_data.rows) {
 		x = type_data.rows;
 	}
 
+	/* If columns < 1, select the first one */
+	if(y < 1) {
+		y = 1;
+	}
 	/* If columns out of range, select the last one */
 	if(y > type_data.columns) {
 		y = type_data.columns;
@@ -142,7 +150,8 @@ void HD44780_write_integer(int32_t number, uint8_t required_length) {
 	char* buffer_ptr = &buffer[HD44780_TMP_BUF_SIZE - 1]; // Set buffer pointer to last element
 	uint8_t digit_count = 0;
 
-	while(number > 0) {
+	/* Without digit_count check, the function will print nothing for case when number is zero */
+	while(number > 0 || digit_count == 0) {
 		/* Decrementing has to be here, not at the end of loop, so that null-terminator at the end is preserved
 		 * and buffer_ptr is properly aligned after exiting the while loop */
 		buffer_ptr--;
