@@ -7,11 +7,8 @@
 
 #include "clk.h"
 #include "qm_gpio.h"
-#include "qm_interrupt.h"
-#include "qm_interrupt_router.h"
-#include "qm_isr.h"
 #include "qm_pinmux.h"
-#include "qm_pwm.h"
+#include "qm_uart.h"
 #include "HD44780.h"
 #include "I2C.h"
 #include "BMP280.h"
@@ -19,16 +16,21 @@
 #include "DS18B20.h"
 #include "DHT11.h"
 #include "GUI.h"
+#include "ESP.h"
 
-#define D7_PIN QM_PIN_ID_13 // 0
-#define D6_PIN QM_PIN_ID_12 // 1
-#define D5_PIN QM_PIN_ID_11 // 2
-#define D4_PIN QM_PIN_ID_10 // 3
-#define RS_PIN QM_PIN_ID_2 // 5
-#define E_PIN QM_PIN_ID_5 // 4
+#define RS_PIN QM_PIN_ID_16 // 13
+#define E_PIN QM_PIN_ID_18 	// 12
+#define D4_PIN QM_PIN_ID_17 // 11
+#define D5_PIN QM_PIN_ID_0 // 10
+#define D6_PIN QM_PIN_ID_24 // 9
+#define D7_PIN QM_PIN_ID_9 // 8
 
-#define ONEWIRE_PIN QM_PIN_ID_8 // 7
-#define DHT11_PIN QM_PIN_ID_9 // 8
+#define ONEWIRE_PIN QM_PIN_ID_10 // 3
+#define DHT11_PIN QM_PIN_ID_11 // 2
+
+#define TX_PIN QM_PIN_ID_12 // 1
+#define RX_PIN QM_PIN_ID_13 // 0
+#define UART_BAUD_RATE 9600
 
 typedef enum {
 	REQUEST_CONVERSION,
@@ -43,13 +45,13 @@ state_t state = REQUEST_CONVERSION;
 
 static void pin_setup(void)
 {
+	/* Set pin multiplexer to GPIO */
 	qm_pmux_select(D7_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(D6_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(D5_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(D4_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(RS_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(E_PIN, QM_PMUX_FN_0);
-
 	qm_pmux_select(ONEWIRE_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(DHT11_PIN, QM_PMUX_FN_0);
 
@@ -57,9 +59,33 @@ static void pin_setup(void)
 	qm_gpio_set_config(QM_GPIO_0, &gpio_config);
 }
 
+static void uart_setup(void) {
+	qm_uart_config_t uart_config;
+
+	/* Set pin multiplexer to UART */
+	qm_pmux_select(TX_PIN, QM_PMUX_FN_2);
+	qm_pmux_select(RX_PIN, QM_PMUX_FN_2);
+
+	uart_config.hw_fc = false; // Turn off hardware automatic flow control
+	uart_config.line_control = QM_UART_LC_8N1; // 8 bit frame, no parity bit, 1 stop bit
+
+	/* Equations from "Intel® Quark™ microcontroller D2000 – Change the Baud-rate of UART for STDOUT" datasheet */
+	uint16_t divider = 32000000 / UART_BAUD_RATE;
+	uint8_t second_arg = divider / 16;
+	uint8_t third_arg = divider - second_arg * 16;
+	uart_config.baud_divisor = QM_UART_CFG_BAUD_DL_PACK(0, second_arg, third_arg);
+
+	/* Apply UART configuration */
+	qm_uart_set_config(QM_UART_0, &uart_config);
+
+	/* Enable UART_A clocking */
+	clk_periph_enable(CLK_PERIPH_CLK | CLK_PERIPH_UARTA_REGISTER);
+}
+
 int main(void)
 {
 	pin_setup();
+	uart_setup();
 
 	HD44780_config_t lcd_config = {
 			.D4 = D4_PIN,
@@ -96,6 +122,8 @@ int main(void)
 
 	GUI_init(&BMP280_meas, &DS18B20_meas, &DHT11_meas);
 
+	ESP_init(&BMP280_meas, &DS18B20_meas, &DHT11_meas);
+
 	while(1) {
 		switch(state) {
 			case REQUEST_CONVERSION:
@@ -114,8 +142,9 @@ int main(void)
 		DHT11_meas = DHT11_get_measurement();
 
 		GUI_update();
+		ESP_send_measurements();
 
-		clk_sys_udelay(500 * 1000); // Wait for 500ms
+		clk_sys_udelay(5000 * 1000); // Wait for 5000ms
 	}
 
 	return 0;
