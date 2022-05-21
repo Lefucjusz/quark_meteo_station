@@ -10,7 +10,10 @@
 
 #define DHT11_FRAME_LENGTH 40 // bits
 #define DHT11_SYNCHRO_LOOP_TIMEOUT 200
-#define DHT11_ERROR_CODE 0xFE // Just an arbitrary special value that normally can't exist as a readout result
+
+/* Just an arbitrary special values that normally can't exist as a readout result */
+#define DHT11_NO_SENSOR_ERROR 0xFD
+#define DHT11_CHECKSUM_ERROR 0xFE
 
 static DHT11_config_t* DHT11_cfg;
 static uint64_t data_frame;
@@ -119,15 +122,15 @@ DHT11_meas_t DHT11_get_measurement(void) {
 
 	/* Error - sensor not detected */
 	if(DHT11_read_data_frame() == DHT11_ABSENT) {
-		measurement.humidity = DHT11_ERROR_CODE;
-		measurement.temperature = DHT11_ERROR_CODE;
+		measurement.humidity = DHT11_NO_SENSOR_ERROR;
+		measurement.temperature = DHT11_NO_SENSOR_ERROR;
 		return measurement;
 	}
 
 	/* Error - invalid checksum */
 	if(DHT11_validate_checksum() == DHT11_CHECKSUM_INVALID) {
-		measurement.humidity = DHT11_ERROR_CODE;
-		measurement.temperature = DHT11_ERROR_CODE;
+		measurement.humidity = DHT11_CHECKSUM_ERROR;
+		measurement.temperature = DHT11_CHECKSUM_ERROR;
 		return measurement;
 	}
 
@@ -137,5 +140,3 @@ DHT11_meas_t DHT11_get_measurement(void) {
 
 	return measurement;
 }
-
-

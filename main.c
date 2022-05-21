@@ -18,6 +18,7 @@
 #include "onewire.h"
 #include "DS18B20.h"
 #include "DHT11.h"
+#include "GUI.h"
 
 #define D7_PIN QM_PIN_ID_13 // 0
 #define D6_PIN QM_PIN_ID_12 // 1
@@ -56,47 +57,6 @@ static void pin_setup(void)
 	qm_gpio_set_config(QM_GPIO_0, &gpio_config);
 }
 
-static void display_layout(void) {
-	HD44780_write_string("I: ");
-	HD44780_gotoxy(2, 1);
-	HD44780_write_string("P: ");
-	HD44780_gotoxy(1, 12);
-	HD44780_write_string("O: ");
-	HD44780_gotoxy(2, 15);
-	HD44780_write_string("H: ");
-}
-
-static void display_DS18B20(void) {
-	HD44780_gotoxy(1, 15);
-	if(DS18B20_meas.sign == DS18B20_NEGATIVE) {
-		HD44780_write_char('-');
-	}
-	HD44780_write_integer(DS18B20_meas.integer, 0);
-	HD44780_write_char('.');
-	HD44780_write_integer(DS18B20_meas.fraction, 2);
-	HD44780_write_char('C');
-}
-
-static void display_BMP280(void) {
-	HD44780_gotoxy(1, 4);
-	HD44780_write_integer(BMP280_meas.temperature / 100, 0);
-	HD44780_write_char('.');
-	HD44780_write_integer(BMP280_meas.temperature % 100, 2);
-	HD44780_write_string("C");
-
-	HD44780_gotoxy(2, 4);
-	HD44780_write_integer(BMP280_meas.pressure / 100, 0);
-	HD44780_write_char('.');
-	HD44780_write_integer(BMP280_meas.pressure % 100, 2);
-	HD44780_write_string("hPa");
-}
-
-static void display_DHT11(void) {
-	HD44780_gotoxy(2, 18);
-	HD44780_write_integer(DHT11_meas.humidity, 0);
-	HD44780_write_string("%");
-}
-
 int main(void)
 {
 	pin_setup();
@@ -114,8 +74,6 @@ int main(void)
 	};
 	HD44780_init(&lcd_config);
 
-	display_layout();
-
 	onewire_config_t onewire_config = {
 			.gpio_config = &gpio_config,
 			.onewire_pin = ONEWIRE_PIN
@@ -130,11 +88,13 @@ int main(void)
 
 	I2C_init(BMP280_ADDR_LOW);
 
-	BMP280_config_t bmp280_config = {
+	BMP280_config_t BMP280_config = {
 			.config_flags = BMP280_STBY_TIME_1S | BMP280_FILTER_COEFF_2,
 			.control_flags = BMP280_MODE_NORMAL | BMP280_PRES_OVERSAMPLING_X1 | BMP280_TEMP_OVERSAMPLING_X1
 	};
-	BMP280_init(&bmp280_config);
+	BMP280_init(&BMP280_config);
+
+	GUI_init(&BMP280_meas, &DS18B20_meas, &DHT11_meas);
 
 	while(1) {
 		switch(state) {
@@ -144,7 +104,6 @@ int main(void)
 				break;
 			case GET_MEASUREMENT:
 				DS18B20_meas = DS18B20_get_temperature();
-				display_DS18B20();
 				state = REQUEST_CONVERSION;
 				break;
 			default:
@@ -152,10 +111,9 @@ int main(void)
 		}
 
 		BMP280_meas = BMP280_get_measurement();
-		display_BMP280();
-
 		DHT11_meas = DHT11_get_measurement();
-		display_DHT11();
+
+		GUI_update();
 
 		clk_sys_udelay(500 * 1000); // Wait for 500ms
 	}
