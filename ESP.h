@@ -12,9 +12,13 @@
 #include "DS18B20.h"
 #include "DHT11.h"
 
+#define ESP_CONNECTION_TIME 10 // s
+
 void ESP_init(const BMP280_meas_t* const BMP280_measurement,
 		const DS18B20_meas_t* const DS18B20_measurement,
 		const DHT11_meas_t* const DHT11_measurement);
+
+void ESP_connect_to_server(void);
 
 void ESP_send_measurements(void);
 

@@ -102,18 +102,6 @@ static void ESP_prepare_post_request(void) {
 	strcat(post_buffer, "\r\n");
 }
 
-static void ESP_write_tcp_start_AT(void) {
-	/* Prepare AT string */
-	strcpy(temp_buffer, "AT+CIPSTART=\"TCP\",\"");
-	strcat(temp_buffer, host_address);
-	strcat(temp_buffer, "\",");
-	strcat(temp_buffer, host_port);
-	strcat(temp_buffer, "\r\n");
-
-	/* Send request via UART to ESP */
-	ESP_write_string(temp_buffer);
-}
-
 static void ESP_write_tcp_send_AT(void) {
 	/* Prepare request string */
 	strcpy(temp_buffer, "AT+CIPSEND=");
@@ -134,11 +122,19 @@ void ESP_init(const BMP280_meas_t* const BMP280_measurement,
 	DHT11_meas = DHT11_measurement;
 }
 
-void ESP_send_measurements(void) {
-	/* Request connection to server and wait 10 seconds for Heroku app to wake up */
-	ESP_write_tcp_start_AT();
-	clk_sys_udelay(10 * 1000 * 1000);
+void ESP_connect_to_server(void) {
+	/* Prepare AT string */
+	strcpy(temp_buffer, "AT+CIPSTART=\"TCP\",\"");
+	strcat(temp_buffer, host_address);
+	strcat(temp_buffer, "\",");
+	strcat(temp_buffer, host_port);
+	strcat(temp_buffer, "\r\n");
 
+	/* Send request via UART to ESP */
+	ESP_write_string(temp_buffer);
+}
+
+void ESP_send_measurements(void) {
 	/* Prepare POST request */
 	ESP_prepare_post_request();
 
