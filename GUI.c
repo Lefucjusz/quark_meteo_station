@@ -27,13 +27,13 @@ static void GUI_draw_BMP280(void) {
 	HD44780_write_integer(BMP280_meas->temperature / 100, 0);
 	HD44780_write_char('.');
 	HD44780_write_integer(BMP280_meas->temperature % 100, 2);
-	HD44780_write_string("C");
+	HD44780_write_string("C ");
 
 	HD44780_gotoxy(2, 4);
 	HD44780_write_integer(BMP280_meas->pressure / 100, 0);
 	HD44780_write_char('.');
 	HD44780_write_integer(BMP280_meas->pressure % 100, 2);
-	HD44780_write_string("hPa");
+	HD44780_write_string("hPa ");
 }
 
 static void GUI_draw_DS18B20(void) {
@@ -44,7 +44,7 @@ static void GUI_draw_DS18B20(void) {
 	HD44780_write_integer(DS18B20_meas->integer, 0);
 	HD44780_write_char('.');
 	HD44780_write_integer(DS18B20_meas->fraction, 2);
-	HD44780_write_char('C');
+	HD44780_write_string("C ");
 }
 
 static void GUI_draw_DHT11(void) {
