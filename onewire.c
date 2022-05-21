@@ -84,6 +84,8 @@ void onewire_write_byte(uint8_t byte) {
 
 uint8_t onewire_read_byte(void) {
 	uint8_t byte = 0;
+	qm_gpio_state_t response;
+
 	for(uint8_t i = 0; i < 8; i++) {
 		byte >>= 1;
 
@@ -96,7 +98,6 @@ uint8_t onewire_read_byte(void) {
 		clk_sys_udelay(5);
 
 		/* Read 1-Wire line state */
-		qm_gpio_state_t response;
 		qm_gpio_read_pin(QM_GPIO_0, onewire_cfg->onewire_pin, &response);
 
 		/* If line high, set bit in result */

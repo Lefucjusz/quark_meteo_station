@@ -17,6 +17,7 @@
 #include "BMP280.h"
 #include "onewire.h"
 #include "DS18B20.h"
+#include "DHT11.h"
 
 #define D7_PIN QM_PIN_ID_13 // 0
 #define D6_PIN QM_PIN_ID_12 // 1
@@ -26,8 +27,20 @@
 #define E_PIN QM_PIN_ID_5 // 4
 
 #define ONEWIRE_PIN QM_PIN_ID_8 // 7
+#define DHT11_PIN QM_PIN_ID_9 // 8
 
-static void pin_setup(qm_gpio_port_config_t* const gpio_config)
+typedef enum {
+	REQUEST_CONVERSION,
+	GET_MEASUREMENT
+} state_t;
+
+qm_gpio_port_config_t gpio_config;
+DS18B20_meas_t DS18B20_meas;
+BMP280_meas_t BMP280_meas;
+DHT11_meas_t DHT11_meas;
+state_t state = REQUEST_CONVERSION;
+
+static void pin_setup(void)
 {
 	qm_pmux_select(D7_PIN, QM_PMUX_FN_0);
 	qm_pmux_select(D6_PIN, QM_PMUX_FN_0);
@@ -37,9 +50,10 @@ static void pin_setup(qm_gpio_port_config_t* const gpio_config)
 	qm_pmux_select(E_PIN, QM_PMUX_FN_0);
 
 	qm_pmux_select(ONEWIRE_PIN, QM_PMUX_FN_0);
+	qm_pmux_select(DHT11_PIN, QM_PMUX_FN_0);
 
-	gpio_config->direction = (1 << D7_PIN) | (1 << D6_PIN) | (1 << D5_PIN) | (1 << D4_PIN) | (1 << RS_PIN) | (1 << E_PIN);
-	qm_gpio_set_config(QM_GPIO_0, gpio_config);
+	gpio_config.direction = (1 << D7_PIN) | (1 << D6_PIN) | (1 << D5_PIN) | (1 << D4_PIN) | (1 << RS_PIN) | (1 << E_PIN);
+	qm_gpio_set_config(QM_GPIO_0, &gpio_config);
 }
 
 static void display_layout(void) {
@@ -52,40 +66,40 @@ static void display_layout(void) {
 	HD44780_write_string("H: ");
 }
 
-static void display_DS18B20(const DS18B20_meas_t* const measurement) {
+static void display_DS18B20(void) {
 	HD44780_gotoxy(1, 15);
-	if(measurement->sign == DS18B20_NEGATIVE) {
+	if(DS18B20_meas.sign == DS18B20_NEGATIVE) {
 		HD44780_write_char('-');
 	}
-	HD44780_write_integer(measurement->integer, 0);
+	HD44780_write_integer(DS18B20_meas.integer, 0);
 	HD44780_write_char('.');
-	HD44780_write_integer(measurement->fraction, 2);
+	HD44780_write_integer(DS18B20_meas.fraction, 2);
 	HD44780_write_char('C');
 }
 
-static void display_BMP280(const BMP280_meas_t* const measurement) {
+static void display_BMP280(void) {
 	HD44780_gotoxy(1, 4);
-	HD44780_write_integer(measurement->temperature / 100, 0);
+	HD44780_write_integer(BMP280_meas.temperature / 100, 0);
 	HD44780_write_char('.');
-	HD44780_write_integer(measurement->temperature % 100, 2);
+	HD44780_write_integer(BMP280_meas.temperature % 100, 2);
 	HD44780_write_string("C");
 
 	HD44780_gotoxy(2, 4);
-	HD44780_write_integer(measurement->pressure / 100, 0);
+	HD44780_write_integer(BMP280_meas.pressure / 100, 0);
 	HD44780_write_char('.');
-	HD44780_write_integer(measurement->pressure % 100, 2);
+	HD44780_write_integer(BMP280_meas.pressure % 100, 2);
 	HD44780_write_string("hPa");
 }
 
-typedef enum {
-	REQUEST_CONVERSION,
-	GET_MEASUREMENT
-} state_t;
+static void display_DHT11(void) {
+	HD44780_gotoxy(2, 18);
+	HD44780_write_integer(DHT11_meas.humidity, 0);
+	HD44780_write_string("%");
+}
 
 int main(void)
 {
-	qm_gpio_port_config_t gpio_config;
-	pin_setup(&gpio_config);
+	pin_setup();
 
 	HD44780_config_t lcd_config = {
 			.D4 = D4_PIN,
@@ -108,6 +122,12 @@ int main(void)
 	};
 	onewire_init(&onewire_config);
 
+	DHT11_config_t DHT11_config = {
+			.gpio_config = &gpio_config,
+			.DHT11_pin = DHT11_PIN
+	};
+	DHT11_init(&DHT11_config);
+
 	I2C_init(BMP280_ADDR_LOW);
 
 	BMP280_config_t bmp280_config = {
@@ -115,10 +135,6 @@ int main(void)
 			.control_flags = BMP280_MODE_NORMAL | BMP280_PRES_OVERSAMPLING_X1 | BMP280_TEMP_OVERSAMPLING_X1
 	};
 	BMP280_init(&bmp280_config);
-
-	state_t state = REQUEST_CONVERSION;
-	DS18B20_meas_t DS18B20_meas;
-	BMP280_meas_t BMP280_meas;
 
 	while(1) {
 		switch(state) {
@@ -128,7 +144,7 @@ int main(void)
 				break;
 			case GET_MEASUREMENT:
 				DS18B20_meas = DS18B20_get_temperature();
-				display_DS18B20(&DS18B20_meas);
+				display_DS18B20();
 				state = REQUEST_CONVERSION;
 				break;
 			default:
@@ -136,7 +152,10 @@ int main(void)
 		}
 
 		BMP280_meas = BMP280_get_measurement();
-		display_BMP280(&BMP280_meas);
+		display_BMP280();
+
+		DHT11_meas = DHT11_get_measurement();
+		display_DHT11();
 
 		clk_sys_udelay(500 * 1000); // Wait for 500ms
 	}

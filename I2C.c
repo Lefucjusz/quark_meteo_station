@@ -29,7 +29,7 @@ void I2C_init(uint8_t dev_addr) {
 
 	i2c_config.address_mode = QM_I2C_7_BIT;
 	i2c_config.mode = QM_I2C_MASTER;
-	i2c_config.speed = QM_I2C_SPEED_FAST; //QM_I2C_SPEED_STD; //TODO check with fast ^^
+	i2c_config.speed = QM_I2C_SPEED_FAST; // Change to standard for devices not supporting fast mode!
 
 	if(qm_i2c_set_config(QM_I2C_0, &i2c_config)) {
 		error = STATUS_INIT_FAILED;
