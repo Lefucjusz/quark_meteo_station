@@ -106,7 +106,7 @@ void HD44780_clear(void) {
 	HD44780_write_cmd(HD44780_CLEAR_DISPLAY_CMD);
 	clk_sys_udelay(1000); // Wait 1ms
 
-	/* Set cursor to first line */
+	/* Set cursor to the first column of the first row */
 	HD44780_type_data_t type_data = HD44780_type_data[HD44780_config->type];
 	HD44780_write_cmd(HD44780_SET_DDRAM_ADDR_CMD | type_data.rows_first_addr[0]);
 	clk_sys_udelay(1000); // Wait 1ms

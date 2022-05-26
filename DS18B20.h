@@ -27,7 +27,17 @@ typedef struct {
 	uint8_t fraction;
 } DS18B20_meas_t;
 
+/**
+ * @brief Requests DS18B20 sensor to perform temperature conversion
+ *        and store the result in device's scratchpad
+ */
 void DS18B20_request_conversion(void);
+
+/**
+ * @brief Reads temperature from device's scratchpad and returns computed measurement
+ *
+ * @return Struct containing temperature measurement
+ */
 DS18B20_meas_t DS18B20_get_temperature(void);
 
 #endif /* DS18B20_H_ */

@@ -103,8 +103,25 @@ typedef struct
 	int32_t temperature;
 } BMP280_meas_t;
 
+/**
+ * @brief Initializes BMP280 sensor library
+ *
+ * @param config Pointer to struct with proper configuration set
+ */
 void BMP280_init(const BMP280_config_t* const config);
+
+/**
+ * @brief Checks whether BMP280 sensor is connected and responding
+ *
+ * @return BMP280_PRESENT if sensor detected, BMP280_ABSENT if sensor not detected
+ */
 BMP280_detect_t BMP280_detect(void);
+
+/**
+ * @brief Obtains measurement from BMP280 sensor
+ *
+ * @return Struct with complete measurement
+ */
 BMP280_meas_t BMP280_get_measurement(void);
 
 #endif /* BMP280_H_ */

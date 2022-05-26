@@ -9,7 +9,7 @@
 #include "clk.h"
 #include "qm_gpio.h"
 
-static onewire_config_t* onewire_cfg;
+static onewire_config_t* onewire_config;
 
 typedef enum {
 	ONEWIRE_OUTPUT,
@@ -19,17 +19,17 @@ typedef enum {
 static void onewire_pin_set_direction(onewire_pin_dir_t direction) {
 	/* Set or clear proper bit in GPIO config */
 	if(direction == ONEWIRE_OUTPUT) {
-		onewire_cfg->gpio_config->direction |= (1 << onewire_cfg->onewire_pin);
+		onewire_config->gpio_config->direction |= (1 << onewire_config->onewire_pin);
 	} else {
-		onewire_cfg->gpio_config->direction &= ~(1 << onewire_cfg->onewire_pin);
+		onewire_config->gpio_config->direction &= ~(1 << onewire_config->onewire_pin);
 	}
 
 	/* Apply modified config */
-	qm_gpio_set_config(QM_GPIO_0, onewire_cfg->gpio_config);
+	qm_gpio_set_config(QM_GPIO_0, onewire_config->gpio_config);
 }
 
-void onewire_init(onewire_config_t* const onewire_config) {
-	onewire_cfg = onewire_config;
+void onewire_init(onewire_config_t* const config) {
+	onewire_config = config;
 	onewire_pin_set_direction(ONEWIRE_INPUT);
 
 	/* This library uses a little trick with port direction when driving 1-Wire pin, which simplifies the code.
@@ -41,7 +41,7 @@ void onewire_init(onewire_config_t* const onewire_config) {
 	 * to do it this way, because driving the bus from high-current port output might result in short circuit in
 	 * case some 1-Wire slave device is pulling it low at the same time.
 	 */
-	qm_gpio_clear_pin(QM_GPIO_0, onewire_cfg->onewire_pin);
+	qm_gpio_clear_pin(QM_GPIO_0, onewire_config->onewire_pin);
 }
 
 onewire_detect_t onewire_reset(void) {
@@ -55,7 +55,7 @@ onewire_detect_t onewire_reset(void) {
 
 	/* Read 1-Wire line state */
 	qm_gpio_state_t response;
-	qm_gpio_read_pin(QM_GPIO_0, onewire_cfg->onewire_pin, &response);
+	qm_gpio_read_pin(QM_GPIO_0, onewire_config->onewire_pin, &response);
 
 	/* Wait for 400us to complete the time slot */
 	clk_sys_udelay(400);
@@ -98,7 +98,7 @@ uint8_t onewire_read_byte(void) {
 		clk_sys_udelay(5);
 
 		/* Read 1-Wire line state */
-		qm_gpio_read_pin(QM_GPIO_0, onewire_cfg->onewire_pin, &response);
+		qm_gpio_read_pin(QM_GPIO_0, onewire_config->onewire_pin, &response);
 
 		/* If line high, set bit in result */
 		if(response == QM_GPIO_HIGH) {

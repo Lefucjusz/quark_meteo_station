@@ -15,7 +15,7 @@
 #define DHT11_NO_SENSOR_ERROR 0xFD
 #define DHT11_CHECKSUM_ERROR 0xFE
 
-static DHT11_config_t* DHT11_cfg;
+static DHT11_config_t* DHT11_config;
 static uint64_t data_frame;
 
 typedef enum {
@@ -31,13 +31,13 @@ typedef enum {
 static void DHT11_pin_set_direction(DHT11_pin_dir_t direction) {
 	/* Set or clear proper bit in GPIO config */
 	if(direction == DHT11_OUTPUT) {
-		DHT11_cfg->gpio_config->direction |= (1 << DHT11_cfg->DHT11_pin);
+		DHT11_config->gpio_config->direction |= (1 << DHT11_config->DHT11_pin);
 	} else {
-		DHT11_cfg->gpio_config->direction &= ~(1 << DHT11_cfg->DHT11_pin);
+		DHT11_config->gpio_config->direction &= ~(1 << DHT11_config->DHT11_pin);
 	}
 
 	/* Apply modified config */
-	qm_gpio_set_config(QM_GPIO_0, DHT11_cfg->gpio_config);
+	qm_gpio_set_config(QM_GPIO_0, DHT11_config->gpio_config);
 }
 
 static DHT11_detect_t DHT11_reset(void) {
@@ -51,7 +51,7 @@ static DHT11_detect_t DHT11_reset(void) {
 
 	/* Read DHT11 line state */
 	qm_gpio_state_t response;
-	qm_gpio_read_pin(QM_GPIO_0, DHT11_cfg->DHT11_pin, &response);
+	qm_gpio_read_pin(QM_GPIO_0, DHT11_config->DHT11_pin, &response);
 
 	/* Wait for 160us to complete the time slot */
 	clk_sys_udelay(160);
@@ -73,7 +73,7 @@ static DHT11_detect_t DHT11_read_data_frame(void) {
 
 		/* Wait for 75us and read DHT11 line state */
 		clk_sys_udelay(75);
-		qm_gpio_read_pin(QM_GPIO_0, DHT11_cfg->DHT11_pin, &response);
+		qm_gpio_read_pin(QM_GPIO_0, DHT11_config->DHT11_pin, &response);
 
 		/* If line high, set bit in result */
 		if(response == QM_GPIO_HIGH) {
@@ -86,7 +86,7 @@ static DHT11_detect_t DHT11_read_data_frame(void) {
 			timeout = DHT11_SYNCHRO_LOOP_TIMEOUT;
 			/* The condition is true on entry, as response is QM_GPIO_HIGH indeed - it was checked in the if above */
 			while((response == QM_GPIO_HIGH) && timeout) {
-				qm_gpio_read_pin(QM_GPIO_0, DHT11_cfg->DHT11_pin, &response);
+				qm_gpio_read_pin(QM_GPIO_0, DHT11_config->DHT11_pin, &response);
 				timeout--;
 			}
 		}
@@ -107,14 +107,14 @@ static DHT11_checksum_t DHT11_validate_checksum(void) { // Algorithm from DHT11 
 }
 
 
-void DHT11_init(DHT11_config_t* const DHT11_config) {
-	DHT11_cfg = DHT11_config;
+void DHT11_init(DHT11_config_t* const config) {
+	DHT11_config = config;
 	DHT11_pin_set_direction(DHT11_INPUT);
 
 	/* This library uses the same trick as 1-Wire library.
 	 * See onewire.c -> onewire_init() comment for details
 	 */
-	qm_gpio_clear_pin(QM_GPIO_0, DHT11_cfg->DHT11_pin);
+	qm_gpio_clear_pin(QM_GPIO_0, DHT11_config->DHT11_pin);
 }
 
 DHT11_meas_t DHT11_get_measurement(void) {
