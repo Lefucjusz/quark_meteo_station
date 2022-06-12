@@ -8,8 +8,9 @@
 #ifndef TIMER_C_
 #define TIMER_C_
 
-#define QUARK_XTAL_FREQ 32000000ULL // 32MHz
-#define TRIMMING_VALUE 275 // Clock cycles, used to calibrate the timer, has to be fine-tuned for each board
+#define QUARK_XTAL_FREQ 32000000UL // 32MHz
+#define MILISECONDS_IN_SECOND 1000
+#define TRIMMING_VALUE 275000 // Clock cycles (31.25us @32MHz), used to calibrate the timer, has to be fine-tuned for each board
 
 void (*callback)(void);
 
@@ -29,7 +30,7 @@ void timer_init(void (*const timer_callback)(void), uint16_t period_ms) {
 
 	/* Configure the timer */
 	qm_pwm_config_t timer_config;
-	timer_config.lo_count = ((QUARK_XTAL_FREQ * period_ms) / 1000) + TRIMMING_VALUE; // Timer duration in clock cycles
+	timer_config.lo_count = ((QUARK_XTAL_FREQ / MILISECONDS_IN_SECOND) * period_ms) + TRIMMING_VALUE; // Timer duration in clock cycles
 	timer_config.hi_count = 0;						// Unused in timer mode
 	timer_config.mode = QM_PWM_MODE_TIMER_COUNT;	// Counter mode
 	timer_config.mask_interrupt = false;			// Enable the interrupt
