@@ -37,9 +37,11 @@ static void GUI_draw_BMP280(void) {
 }
 
 static void GUI_draw_DS18B20(void) {
-	HD44780_gotoxy(1, 15);
+	HD44780_gotoxy(1, 14);
 	if(DS18B20_meas->sign == DS18B20_NEGATIVE) {
 		HD44780_write_char('-');
+	} else {
+		HD44780_write_char(' ');
 	}
 	HD44780_write_integer(DS18B20_meas->integer, 0);
 	HD44780_write_char('.');
