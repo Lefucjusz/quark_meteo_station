@@ -12,7 +12,7 @@
 #define MILISECONDS_IN_SECOND 1000
 #define TRIMMING_VALUE 275000 // Clock cycles (31.25us @32MHz), used to calibrate the timer, has to be fine-tuned for each board
 
-void (*callback)(void);
+static void (*callback)(void);
 
 #include "timer.h"
 #include "qm_pwm.h"
