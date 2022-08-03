@@ -11,10 +11,6 @@
 #define DHT11_FRAME_LENGTH 40 // bits
 #define DHT11_SYNCHRO_LOOP_TIMEOUT 200
 
-/* Just an arbitrary special values that normally can't exist as a readout result */
-#define DHT11_NO_SENSOR_ERROR 0xFD
-#define DHT11_CHECKSUM_ERROR 0xFE
-
 static DHT11_config_t* DHT11_config;
 static uint64_t data_frame;
 

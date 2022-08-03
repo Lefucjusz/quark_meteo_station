@@ -11,6 +11,12 @@
 #include <stdint.h>
 #include "qm_gpio.h"
 
+/* Just an arbitrary special values that normally can't exist as a readout result */
+typedef enum {
+	DHT11_NO_SENSOR_ERROR = 0xFD,
+	DHT11_CHECKSUM_ERROR = 0xFE
+} DHT11_error_t;
+
 typedef struct {
 	qm_gpio_port_config_t* const gpio_config;
 	uint8_t DHT11_pin;

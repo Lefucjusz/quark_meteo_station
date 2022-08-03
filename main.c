@@ -18,6 +18,7 @@
 #include "GUI.h"
 #include "ESP.h"
 #include "timer.h"
+#include "average.h"
 
 #define RS_PIN QM_PIN_ID_16 // 13
 #define E_PIN QM_PIN_ID_18 	// 12
@@ -111,9 +112,9 @@ static void timer_callback(void) {
 
 int main(void)
 {
-	DS18B20_meas_t DS18B20_meas;
-	BMP280_meas_t BMP280_meas;
-	DHT11_meas_t DHT11_meas;
+	DS18B20_meas_t DS18B20_meas, DS18B20_meas_avg;
+	BMP280_meas_t BMP280_meas, BMP280_meas_avg;
+	DHT11_meas_t DHT11_meas, DHT11_meas_avg;
 	DS18B20_readout_state_t DS18B20_state = REQUEST_CONVERSION;
 
 	/* Configure GPIO */
@@ -160,11 +161,14 @@ int main(void)
 	};
 	BMP280_init(&BMP280_config);
 
+	/* Configure average */
+	average_init(&BMP280_meas, &BMP280_meas_avg, &DS18B20_meas, &DS18B20_meas_avg, &DHT11_meas, &DHT11_meas_avg);
+
 	/* Configure GUI */
 	GUI_init(&BMP280_meas, &DS18B20_meas, &DHT11_meas);
 
 	/* Configure ESP */
-	ESP_init(&BMP280_meas, &DS18B20_meas, &DHT11_meas);
+	ESP_init(&BMP280_meas_avg, &DS18B20_meas_avg, &DHT11_meas_avg);
 
 	/* Timer init */
 	timer_init(timer_callback, TIMER_PERIOD);
@@ -180,13 +184,16 @@ int main(void)
 					break;
 				case GET_MEASUREMENT:
 					DS18B20_meas = DS18B20_get_temperature();
+					average_update_DS18B20();
 					DS18B20_state = REQUEST_CONVERSION;
 					break;
 				default:
 					break;
 			}
 			BMP280_meas = BMP280_get_measurement();
+			average_update_BMP280();
 			DHT11_meas = DHT11_get_measurement();
+			average_update_DHT11();
 
 			/* State machine for ESP data transmission */
 			switch(ESP_state) {
@@ -212,6 +219,8 @@ int main(void)
 				} break;
 				case SEND_DATA:
 					ESP_send_measurements();
+					/* Clear average values from the last SERVER_UPDATE_PERIOD */
+					average_reset();
 					ESP_state = IDLE;
 					break;
 				default:
