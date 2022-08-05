@@ -107,6 +107,3 @@ void average_update_DHT11(void) {
 	DHT11_meas_avg->temperature = DHT11_avg.temp_sum / DHT11_avg.meas_num;
 	DHT11_meas_avg->humidity = DHT11_avg.humid_sum / DHT11_avg.meas_num;
 }
-
-
-

@@ -10,7 +10,7 @@
 
 #define QUARK_XTAL_FREQ 32000000UL // 32MHz
 #define MILISECONDS_IN_SECOND 1000
-#define TRIMMING_VALUE 310000 // Clock cycles (31.25us @32MHz), used to calibrate the timer, has to be fine-tuned for each board
+#define TRIMMING_VALUE 325000 // Clock cycles (31.25us @32MHz), used to calibrate the timer, has to be fine-tuned for each board
 
 static void (*callback)(void);
 
