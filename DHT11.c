@@ -9,10 +9,27 @@
 #include "clk.h"
 
 #define DHT11_FRAME_LENGTH 40 // bits
-#define DHT11_SYNCHRO_LOOP_TIMEOUT 200
+#define DHT11_SYNCHRO_LOOP_TIMEOUT 1000
 
 static DHT11_config_t* DHT11_config;
-static uint64_t data_frame;
+
+/* The order of the elements in structs is important! */
+typedef union {
+	uint64_t raw_data;
+	struct {
+		uint8_t checksum; // 8 bits
+		struct {
+			uint8_t fraction;
+			uint8_t integer;
+		} temperature; // 16 bits
+		struct {
+			uint8_t fraction;
+			uint8_t integer;
+		} humidity; // 16 bits
+	};
+} DHT11_data_frame_t;
+
+static DHT11_data_frame_t data_frame;
 
 typedef enum {
 	DHT11_OUTPUT,
@@ -49,8 +66,8 @@ static DHT11_detect_t DHT11_reset(void) {
 	qm_gpio_state_t response;
 	qm_gpio_read_pin(QM_GPIO_0, DHT11_config->DHT11_pin, &response);
 
-	/* Wait for 160us to complete the time slot */
-	clk_sys_udelay(160);
+	/* Wait for 145us to complete the time slot, remaining 15us is lost in other instructions */
+	clk_sys_udelay(145);
 
 	return response == QM_GPIO_LOW ? DHT11_PRESENT : DHT11_ABSENT;
 }
@@ -60,20 +77,20 @@ static DHT11_detect_t DHT11_read_data_frame(void) {
 		return DHT11_ABSENT; // Sensor not detected, stop the readout
 	}
 
-	uint8_t timeout;
+	uint16_t timeout;
 	qm_gpio_state_t response;
 
 	/* Retrieve data */
 	for(uint8_t i = 0; i < DHT11_FRAME_LENGTH; i++) {
-		data_frame <<= 1;
+		data_frame.raw_data <<= 1;
 
-		/* Wait for 75us and read DHT11 line state */
-		clk_sys_udelay(75);
+		/* Wait for 74us and read DHT11 line state */
+		clk_sys_udelay(74);
 		qm_gpio_read_pin(QM_GPIO_0, DHT11_config->DHT11_pin, &response);
 
 		/* If line high, set bit in result */
 		if(response == QM_GPIO_HIGH) {
-			data_frame |= 0x01;
+			data_frame.raw_data |= 0x01;
 			/* This is very clever idea, enabling timings self-correction on every "1" bit transmitted
 			 * Loop waits for the start of transmission signal from DHT11, so that next bit will be
 			 * received perfectly on time. Timeout prevents from getting stuck in this loop forever
@@ -93,11 +110,11 @@ static DHT11_detect_t DHT11_read_data_frame(void) {
 
 static DHT11_checksum_t DHT11_validate_checksum(void) { // Algorithm from DHT11 datasheet
 	uint8_t a, b, c, d, e;
-	a = (data_frame >> 32) & 0xFF;
-	b = (data_frame >> 24) & 0xFF;
-	c = (data_frame >> 16) & 0xFF;
-	d = (data_frame >> 8) & 0xFF;
-	e = data_frame & 0xFF;
+	a = data_frame.humidity.integer;
+	b = data_frame.humidity.fraction;
+	c = data_frame.temperature.integer;
+	d = data_frame.temperature.fraction;
+	e = data_frame.checksum;
 
 	return (((a + b + c + d) & 0xFF) == e) ? DHT11_CHECKSUM_VALID : DHT11_CHECKSUM_INVALID;
 }
@@ -131,8 +148,8 @@ DHT11_meas_t DHT11_get_measurement(void) {
 	}
 
 	/* Successful readout */
-	measurement.humidity = (data_frame >> 32) & 0xFF;
-	measurement.temperature = (data_frame >> 16) & 0xFF;
+	measurement.humidity = data_frame.humidity.integer;
+	measurement.temperature = data_frame.temperature.integer;
 
 	return measurement;
 }
